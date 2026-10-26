@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Voter Registration — Decentralized Voting System{% endblock %}
+
+{% block content %}
+<div style="max-width: 580px; margin: 1rem auto;">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h1 class="card-title">📝 Voter Registration</h1>
+        <p class="card-subtitle">Register to receive single-use cryptographic voting credentials</p>
+      </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('register') }}" id="registerForm">
+      <div class="form-group">
+        <label for="voter_id" class="form-label">Voter Identification (ID) *</label>
+        <input 
+          type="text" 
+          id="voter_id" 
+          name="voter_id" 
+          class="form-control" 
+          placeholder="e.g. voter_101 or your student/govt ID" 
+          value="{{ request.form.get('voter_id', '') }}"
+          required 
+          pattern="[A-Za-z0-9_\-]{3,32}"
+          title="3 to 32 alphanumeric characters, dashes, or underscores"
+        >
+        <div class="form-help">Must be 3-32 characters (letters, numbers, underscores).</div>
+      </div>
+
+      <div class="form-group">
+        <label for="name" class="form-label">Full Legal Name *</label>
+        <input 
+          type="text" 
+          id="name" 
+          name="name" 
+          class="form-control" 
+          placeholder="e.g. Alice Smith" 
+          value="{{ request.form.get('name', '') }}"
+          required 
+          minlength="2"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="email" class="form-label">Email Address *</label>
+        <input 
+          type="email" 
+          id="email" 
+          name="email" 
+          class="form-control" 
+          placeholder="e.g. alice@example.com" 
+          value="{{ request.form.get('email', '') }}"
+          required
+        >
+        <div class="form-help">Used for duplicate voter verification. Must be unique.</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="password" class="form-label">Password *</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            class="form-control" 
+            placeholder="Min 6 characters" 
+            required 
+            minlength="6"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="confirm_password" class="form-label">Confirm Password *</label>
+          <input 
+            type="password" 
+            id="confirm_password" 
+            name="confirm_password" 
+            class="form-control" 
+            placeholder="Re-enter password" 
+            required 
+            minlength="6"
+          >
+        </div>
+      </div>
+
+      <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: var(--radius-sm); padding: 0.85rem; margin-bottom: 1.5rem; font-size: 0.85rem; color: var(--text-muted);">
+        🔒 <strong>Security Guarantee:</strong> Passwords are never stored in plain text. They are hashed using PBKDF2-HMAC-SHA256 with cryptographically generated per-user salt.
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">
+        Complete Registration &rarr;
+      </button>
+
+      <div style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
+        Already registered? <a href="{{ url_for('login') }}" style="color: var(--primary); text-decoration: none; font-weight: 600;">Log in here</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Blockchain Explorer — Decentralized Voting System{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+  <!-- Explorer Header -->
+  <div class="card" style="padding: 1.5rem 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+          <h1 style="font-size: 1.6rem; font-weight: 700;">🔍 Blockchain Ledger Explorer</h1>
+          <span class="badge badge-success">SHA-256 VERIFIED</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+          Inspect immutable committed blocks, canonical hash chains, Merkle inclusion roots, and validator digital signatures.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 1.5rem; text-align: right;">
+        <div>
+          <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Chain Height</span><br>
+          <strong style="font-size: 1.4rem; color: #fbbf24;">#{{ chain|length }}</strong>
+        </div>
+        <div>
+          <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Integrity Status</span><br>
+          {% if is_valid %}
+            <span class="badge badge-success">✓ Entire Chain Valid</span>
+          {% else %}
+            <span class="badge badge-danger">✗ Tamper Detected</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Search Box -->
+    <div style="margin-top: 1.25rem; display: flex; gap: 0.75rem;">
+      <input 
+        type="text" 
+        id="explorerSearchInput" 
+        class="form-control" 
+        placeholder="Filter blocks by block height (e.g. 1), previous hash, or transaction ID..."
+        style="flex: 1;"
+        onkeyup="filterExplorerBlocks()"
+      >
+      <button type="button" class="btn btn-secondary" onclick="filterExplorerBlocks()">Filter</button>
+      <button type="button" class="btn btn-secondary" onclick="resetExplorerFilter()">Clear</button>
+    </div>
+  </div>
+
+  <!-- Block Chain List -->
+  <div style="display: flex; flex-direction: column; gap: 1.25rem;" id="blocksContainer">
+    {% for b in chain|reverse %}
+      <div class="card block-card" id="block_{{ b.index }}" data-height="{{ b.index }}" data-hash="{{ b.current_hash }}" data-prev="{{ b.previous_hash }}">
+        
+        <!-- Block Top Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="background: rgba(56, 189, 248, 0.15); color: var(--primary); font-family: var(--font-mono); font-weight: 800; font-size: 1.1rem; padding: 0.3rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid rgba(56, 189, 248, 0.3);">
+              BLOCK #{{ b.index }}
+            </div>
+            {% if b.index == 0 %}
+              <span class="badge badge-purple">GENESIS BLOCK</span>
+            {% else %}
+              <span class="badge badge-success">COMMITTED</span>
+            {% endif %}
+            <span style="color: var(--text-dim); font-size: 0.85rem;">Validator: <code style="color: var(--text-main);">{{ b.node_id or 'node_a' }}</code></span>
+          </div>
+
+          <div style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-muted);">
+            Timestamp: {{ b.timestamp }}
+          </div>
+        </div>
+
+        <!-- Cryptographic Hashes Grid -->
+        <div style="display: grid; grid-template-columns: 1fr; gap: 0.75rem; font-family: var(--font-mono); font-size: 0.85rem; margin-bottom: 1rem;">
+          <div style="background: rgba(15, 23, 42, 0.6); padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid rgba(255, 255, 255, 0.05);">
+            <div style="color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase;">Current Block Hash (SHA-256)</div>
+            <div style="color: #38bdf8; word-break: break-all; font-weight: 600;">{{ b.current_hash }}</div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid rgba(255, 255, 255, 0.05);">
+              <div style="color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase;">Previous Hash Linkage</div>
+              <div style="color: #94a3b8; word-break: break-all;">{{ b.previous_hash }}</div>
+            </div>
+
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid rgba(255, 255, 255, 0.05);">
+              <div style="color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase;">Merkle Tree Root</div>
+              <div style="color: #34d399; word-break: break-all;">{{ b.merkle_root }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transactions Section -->
+        <div style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <strong style="font-size: 0.9rem; color: var(--text-main);">
+              📦 Transactions Included: <span style="color: var(--primary);">{{ b.transactions|length }}</span>
+            </strong>
+            <button 
+              type="button" 
+              class="btn btn-secondary" 
+              style="padding: 0.25rem 0.65rem; font-size: 0.78rem;"
+              onclick="toggleBlockTxs('{{ b.index }}')"
+            >
+              Toggle Details ({{ b.transactions|length }})
+            </button>
+          </div>
+
+          <div id="txList_{{ b.index }}" style="display: {% if b.transactions|length > 0 and b.index != 0 %}block{% else %}none{% endif %};">
+            {% if b.transactions|length == 0 %}
+              <div style="color: var(--text-dim); font-size: 0.85rem; font-style: italic; padding: 0.5rem 0;">
+                Genesis initialization block (No voting transactions).
+              </div>
+            {% else %}
+              <div class="data-table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Anonymous Transaction ID</th>
+                      <th>Token Hash (Single-Use)</th>
+                      <th>Candidate ID</th>
+                      <th>Shard</th>
+                      <th>Audit Proof</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for tx in b.transactions %}
+                      <tr>
+                        <td style="font-family: var(--font-mono); color: var(--text-dim);">{{ loop.index }}</td>
+                        <td style="font-family: var(--font-mono); color: var(--primary); font-size: 0.82rem;">
+                          {{ tx.transaction_id[:16] }}...{{ tx.transaction_id[-8:] }}
+                        </td>
+                        <td style="font-family: var(--font-mono); color: var(--text-muted); font-size: 0.82rem;">
+                          {{ tx.token_hash[:16] }}...
+                        </td>
+                        <td>
+                          <span class="badge badge-info">{{ tx.candidate_id }}</span>
+                        </td>
+                        <td style="font-family: var(--font-mono); color: var(--accent-purple);">
+                          {{ tx.assigned_shard or 'shard_default' }}
+                        </td>
+                        <td>
+                          <a href="{{ url_for('merkle_proof_page') }}?tx_id={{ tx.transaction_id }}" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">
+                            🔬 Audit Proof
+                          </a>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleBlockTxs(index) {
+    const el = document.getElementById('txList_' + index);
+    if (!el) return;
+    el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+  }
+
+  function filterExplorerBlocks() {
+    const q = document.getElementById('explorerSearchInput').value.trim().toLowerCase();
+    const cards = document.querySelectorAll('.block-card');
+    cards.forEach(card => {
+      const height = card.getAttribute('data-height');
+      const hash = (card.getAttribute('data-hash') || '').toLowerCase();
+      const prev = (card.getAttribute('data-prev') || '').toLowerCase();
+      const text = card.innerText.toLowerCase();
+
+      if (!q || height === q || hash.includes(q) || prev.includes(q) || text.includes(q)) {
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  function resetExplorerFilter() {
+    document.getElementById('explorerSearchInput').value = '';
+    filterExplorerBlocks();
+  }
+</script>
+{% endblock %}

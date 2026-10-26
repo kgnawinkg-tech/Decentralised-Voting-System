@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Distributed Node Network — Decentralized Voting System{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+  <!-- Header -->
+  <div class="card" style="padding: 1.5rem 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+          <h1 style="font-size: 1.6rem; font-weight: 700;">🌐 Distributed 3-Node P2P Network</h1>
+          <span class="badge badge-success">LEADER-QUORUM ACTIVE</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+          Real-time peer-to-peer cluster state across Node A (Leader), Node B (Validator), and Node C (Validator).
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary" onclick="pingNetworkPeers()">📡 Ping All Peers</button>
+        <button type="button" class="btn btn-primary" onclick="triggerNetworkSync()">🔄 Request Sync</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Network Topology Visualizer -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Network Mesh Topology</h2>
+      <span style="color: var(--text-muted); font-size: 0.85rem;">Bidirectional P2P HTTP/JSON-RPC Mesh</span>
+    </div>
+
+    <div style="display: flex; justify-content: space-around; align-items: center; padding: 2rem 1rem; position: relative; flex-wrap: wrap; gap: 2rem;">
+      {% for node in nodes %}
+        <div style="background: rgba(15, 23, 42, 0.9); border: 2px solid {% if node.online %}var(--primary){% else %}#ef4444{% endif %}; border-radius: var(--radius-md); padding: 1.25rem 1.5rem; text-align: center; min-width: 220px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+          <div style="font-size: 2rem; margin-bottom: 0.35rem;">
+            {% if node.id == 'node_a' %}👑{% else %}🖥️{% endif %}
+          </div>
+          <strong style="color: #fff; font-size: 1.1rem;">{{ node.name }}</strong>
+          <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-dim); margin-bottom: 0.5rem;">
+            {{ node.endpoint }}
+          </div>
+          <div>
+            {% if node.online %}
+              <span class="badge badge-success">ONLINE &bull; {{ node.latency_ms|round(1) }}ms</span>
+            {% else %}
+              <span class="badge badge-danger">OFFLINE</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Detailed Node Cards Grid -->
+  <div class="grid-3">
+    {% for node in nodes %}
+      <div class="card" style="border-top: 4px solid {% if node.online %}#10b981{% else %}#ef4444{% endif %};">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;">{{ node.name }}</h3>
+            <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-dim);">ID: {{ node.id }}</span>
+          </div>
+          {% if node.online %}
+            <span class="badge badge-success">READY</span>
+          {% else %}
+            <span class="badge badge-danger">UNREACHABLE</span>
+          {% endif %}
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.65rem; font-size: 0.9rem;">
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-dim);">Endpoint</span>
+            <span style="font-family: var(--font-mono); color: var(--primary);">{{ node.endpoint }}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-dim);">Role</span>
+            <span style="font-weight: 600;">{% if node.id == 'node_a' %}Leader / Coordinator{% else %}Validator Peer{% endif %}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-dim);">Ledger Height</span>
+            <span style="font-weight: 700; color: #fbbf24;">#{{ node.block_height }}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-dim);">Network Latency</span>
+            <span>{% if node.online %}{{ node.latency_ms|round(1) }} ms{% else %}Timeout{% endif %}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-dim);">Pending Mempool</span>
+            <span>{{ node.pending_mempool }} txs</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-dim);">Stored Records</span>
+            <span>{{ node.stored_records }} records</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-dim);">Connected Peers</span>
+            <span>{{ node.online_peers|length }} active</span>
+          </div>
+        </div>
+
+        <div style="margin-top: 1.25rem; border-top: 1px solid var(--border-color); padding-top: 1rem; display: flex; gap: 0.5rem;">
+          <a href="{{ node.endpoint }}/" target="_blank" class="btn btn-secondary" style="flex: 1; padding: 0.35rem 0.5rem; font-size: 0.8rem; text-align: center;">
+            Open Node UI &rarr;
+          </a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Operational Mode Clarification -->
+  <div class="grid-2">
+    <div class="card">
+      <h3 style="font-size: 1.05rem; color: var(--primary); margin-bottom: 0.75rem;">
+        💻 Local Simulation Mode (Active)
+      </h3>
+      <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">
+        Currently running 3 separate Python processes on localhost:
+      </p>
+      <ul style="color: var(--text-muted); font-size: 0.85rem; padding-left: 1.25rem; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.25rem;">
+        <li>Node A: <code>http://127.0.0.1:5001</code> (Storage: <code>data/node_a/</code>)</li>
+        <li>Node B: <code>http://127.0.0.1:5002</code> (Storage: <code>data/node_b/</code>)</li>
+        <li>Node C: <code>http://127.0.0.1:5003</code> (Storage: <code>data/node_c/</code>)</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size: 1.05rem; color: var(--accent-purple); margin-bottom: 0.75rem;">
+        🌐 Physical Multi-Computer LAN Mode
+      </h3>
+      <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">
+        To deploy across independent laptops over Wi-Fi / Ethernet:
+      </p>
+      <ul style="color: var(--text-muted); font-size: 0.85rem; padding-left: 1.25rem; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.25rem;">
+        <li>Bind nodes to <code>0.0.0.0</code> instead of 127.0.0.1.</li>
+        <li>Set LAN IPs (e.g. <code>192.168.1.10</code>) in <code>config.yaml</code>.</li>
+        <li>See <a href="{{ url_for('deployment_guide') }}" style="color: var(--primary);">Deployment Guide</a> for complete instructions.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  async function pingNetworkPeers() {
+    try {
+      const res = await fetch('/api/network/ping', { method: 'POST' });
+      const data = await res.json();
+      alert("Peer ping complete! Network topology refreshed.");
+      location.reload();
+    } catch(e) {
+      alert("Ping error: " + e.message);
+    }
+  }
+
+  async function triggerNetworkSync() {
+    try {
+      const res = await fetch('/api/network/sync', { method: 'POST' });
+      const data = await res.json();
+      alert("Ledger sync triggered: " + JSON.stringify(data));
+      location.reload();
+    } catch(e) {
+      alert("Sync error: " + e.message);
+    }
+  }
+</script>
+{% endblock %}

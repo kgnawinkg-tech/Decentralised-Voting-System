@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Merkle Proof & Receipt Verification — Decentralized Voting System{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem;">
+
+  <!-- Header -->
+  <div class="card" style="padding: 1.5rem 2rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+      <h1 style="font-size: 1.6rem; font-weight: 700;">🔬 Merkle Inclusion Proof Auditor</h1>
+      <span class="badge badge-purple">DSA CONCEPT 21</span>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">
+      Verify that an anonymous ballot transaction exists inside a committed blockchain block via a logarithmic $O(\log N)$ hash trajectory, without disclosing candidate selection or compromising voter privacy.
+    </p>
+
+    <!-- Lookup Form -->
+    <div style="margin-top: 1.25rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+      <input 
+        type="text" 
+        id="inputTxId" 
+        class="form-control" 
+        placeholder="Enter 64-character SHA-256 Transaction ID..." 
+        style="flex: 1; font-family: var(--font-mono); font-size: 0.9rem;"
+        value="{{ initial_tx_id or '' }}"
+      >
+      <button type="button" class="btn btn-primary" onclick="auditMerkleProof()">Verify Proof &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Results Box -->
+  <div id="auditContainer" style="display: none; flex-direction: column; gap: 1.25rem;">
+    
+    <!-- Status Banner -->
+    <div id="statusBanner" class="card" style="padding: 1.25rem 1.75rem; border-color: var(--primary);">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <div style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase;">Cryptographic Result</div>
+          <div id="auditStatusText" style="font-size: 1.4rem; font-weight: 800; color: #34d399;">
+            ✓ PROOF VERIFIED
+          </div>
+        </div>
+
+        <div style="text-align: right;">
+          <div style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase;">Block Location</div>
+          <div id="auditBlockIndex" style="font-family: var(--font-mono); font-size: 1.2rem; font-weight: 700; color: #fbbf24;">
+            Block #1
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Proof Path Details Table -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Hash Trajectory: Leaf to Merkle Root</h2>
+        <span style="color: var(--text-muted); font-size: 0.85rem;" id="pathLengthBadge"></span>
+      </div>
+
+      <div class="receipt-box" style="margin-top: 0;">
+        <div class="receipt-row">
+          <span class="receipt-label">Target Transaction ID</span>
+          <span class="receipt-value" id="displayTxId"></span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Leaf Hash [H(tx)]</span>
+          <span class="receipt-value" id="displayLeafHash" style="color: var(--primary);"></span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Target Block Merkle Root</span>
+          <span class="receipt-value" id="displayTargetRoot" style="color: #34d399; font-weight: 700;"></span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Recomputed Trajectory Root</span>
+          <span class="receipt-value" id="displayCalculatedRoot"></span>
+        </div>
+      </div>
+
+      <!-- Sibling Steps Table -->
+      <h3 style="font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; margin: 1.25rem 0 0.75rem 0;">
+        Step-by-Step Sibling Hash Combination
+      </h3>
+      <div class="data-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Step #</th>
+              <th>Sibling Orientation</th>
+              <th>Sibling Hash (SHA-256)</th>
+              <th>Combined Next Hash</th>
+            </tr>
+          </thead>
+          <tbody id="proofStepsTableBody">
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary" onclick="copyProofJson()">📋 Copy Proof JSON</button>
+        <button type="button" class="btn btn-secondary" onclick="downloadProofJson()">💾 Download Proof File</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Loading / Empty State -->
+  <div id="loadingState" style="display: none; text-align: center; padding: 3rem 1rem;">
+    <div style="width: 50px; height: 50px; border: 3px solid rgba(56, 189, 248, 0.2); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem auto;"></div>
+    <div style="color: var(--text-muted);">Querying blockchain node for Merkle inclusion tree...</div>
+  </div>
+
+  <div id="emptyState" class="card" style="text-align: center; padding: 3rem 1.5rem; color: var(--text-muted);">
+    <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🔬</div>
+    <h3 style="color: var(--text-main); font-size: 1.2rem; margin-bottom: 0.5rem;">No Transaction Selected</h3>
+    <p style="max-width: 500px; margin: 0 auto;">
+      Enter your 64-character Transaction ID above or click "Audit Proof" next to any transaction in the <a href="{{ url_for('explorer') }}" style="color: var(--primary);">Blockchain Explorer</a>.
+    </p>
+  </div>
+
+  <!-- Educational Explainer -->
+  <div class="card" style="background: rgba(15, 23, 42, 0.6);">
+    <h3 style="font-size: 1rem; color: var(--primary); margin-bottom: 0.5rem;">
+      ℹ️ How Merkle Proofs Guarantee Privacy and Integrity
+    </h3>
+    <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">
+      In this voting system, each block constructs a binary <strong>Merkle Tree</strong> out of its committed transactions (Concept 21). When you verify an inclusion proof:
+    </p>
+    <ul style="color: var(--text-muted); font-size: 0.88rem; padding-left: 1.5rem; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.35rem;">
+      <li>You provide only your transaction receipt ID.</li>
+      <li>The validator produces $O(\log N)$ sibling hashes connecting your leaf to the block's published Merkle root.</li>
+      <li>If the calculated root matches the block header, your ballot is guaranteed to be immutably recorded in the ledger without requiring the disclosure of anyone's candidate choice or personal identity!</li>
+    </ul>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let currentProofData = null;
+
+  async function auditMerkleProof() {
+    const txId = document.getElementById('inputTxId').value.trim();
+    if (!txId) {
+      alert("Please enter a Transaction ID to verify.");
+      return;
+    }
+
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('auditContainer').style.display = 'none';
+    document.getElementById('loadingState').style.display = 'block';
+
+    try {
+      const res = await fetch('/api/merkle_proof/' + encodeURIComponent(txId));
+      const data = await res.json();
+      document.getElementById('loadingState').style.display = 'none';
+
+      if (!res.ok || !data.success) {
+        alert(data.error || "Transaction not found or not yet included in a committed block.");
+        document.getElementById('emptyState').style.display = 'block';
+        return;
+      }
+
+      currentProofData = data;
+      renderProofDetails(data);
+    } catch (e) {
+      document.getElementById('loadingState').style.display = 'none';
+      alert("Error contacting blockchain node: " + e.message);
+      document.getElementById('emptyState').style.display = 'block';
+    }
+  }
+
+  function renderProofDetails(data) {
+    document.getElementById('auditContainer').style.display = 'flex';
+    document.getElementById('displayTxId').textContent = data.transaction_id;
+    document.getElementById('displayTargetRoot').textContent = data.merkle_root;
+    document.getElementById('auditBlockIndex').textContent = "Block #" + data.block_index;
+    document.getElementById('pathLengthBadge').textContent = (data.proof || []).length + " Sibling Hashes (O(log N))";
+
+    const tbody = document.getElementById('proofStepsTableBody');
+    tbody.innerHTML = '';
+
+    // Verify receipt via server endpoint
+    fetch('/api/verify_receipt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        transaction: data.transaction,
+        merkle_root: data.merkle_root,
+        proof: data.proof
+      })
+    }).then(r => r.json()).then(vData => {
+      document.getElementById('displayLeafHash').textContent = vData.leaf_hash || data.transaction_id;
+      document.getElementById('displayCalculatedRoot').textContent = vData.merkle_root;
+
+      const banner = document.getElementById('statusBanner');
+      const statusText = document.getElementById('auditStatusText');
+      if (vData.valid) {
+        statusText.textContent = "✓ INCLUSION PROOF MATHEMATICALLY VERIFIED";
+        statusText.style.color = "#34d399";
+        banner.style.borderColor = "#10b981";
+      } else {
+        statusText.textContent = "✗ INVALID MERKLE PROOF: ROOT MISMATCH";
+        statusText.style.color = "#f87171";
+        banner.style.borderColor = "#ef4444";
+      }
+    });
+
+    // Populate steps
+    (data.proof || []).forEach((step, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-family: var(--font-mono); color: var(--text-dim);">${idx + 1}</td>
+        <td><span class="badge ${step.is_right ? 'badge-info' : 'badge-purple'}">${step.is_right ? 'RIGHT SIBLING' : 'LEFT SIBLING'}</span></td>
+        <td style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-main);">${step.hash}</td>
+        <td style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--primary);">SHA256(current + sibling)</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function copyProofJson() {
+    if (!currentProofData) return;
+    navigator.clipboard.writeText(JSON.stringify(currentProofData, null, 2)).then(() => {
+      alert("Proof JSON copied to clipboard!");
+    });
+  }
+
+  function downloadProofJson() {
+    if (!currentProofData) return;
+    const blob = new Blob([JSON.stringify(currentProofData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'merkle_proof_' + (currentProofData.transaction_id || 'audit').substring(0, 10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  // Auto-run if tx_id was passed in URL
+  window.addEventListener('DOMContentLoaded', () => {
+    const val = document.getElementById('inputTxId').value.trim();
+    if (val) {
+      auditMerkleProof();
+    }
+  });
+</script>
+{% endblock %}

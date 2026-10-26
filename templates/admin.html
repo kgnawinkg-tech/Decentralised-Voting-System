@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Election Administration & Audit Logs — Decentralized Voting System{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+  <!-- Header -->
+  <div class="card" style="padding: 1.5rem 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+          <h1 style="font-size: 1.6rem; font-weight: 700;">🏛️ Election Administration & Audit Log</h1>
+          <span class="badge badge-warning">ADMIN PRIVILEGES</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+          Manage polling lifecycle, inspect registered voters, monitor consensus, and review the append-only audit trail.
+        </p>
+      </div>
+
+      <!-- Polling Status Controls -->
+      <div style="display: flex; gap: 0.75rem; align-items: center;">
+        {% if election.get('status') == 'OPEN' %}
+          <button type="button" class="btn btn-secondary" onclick="setElectionStatus('CLOSED')" style="border-color: #ef4444; color: #f87171;">
+            🔒 Close Polling
+          </button>
+        {% else %}
+          <button type="button" class="btn btn-primary" onclick="setElectionStatus('OPEN')" style="background: #10b981;">
+            🔓 Open Polling
+          </button>
+        {% endif %}
+        <button type="button" class="btn btn-secondary" onclick="triggerAdminMine()">🔨 Propose Block</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Election Configuration Overview -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Election Configuration</h2>
+        <span class="badge {% if election.get('status') == 'OPEN' %}badge-success{% else %}badge-danger{% endif %}">
+          {{ election.get('status', 'OPEN') }}
+        </span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.65rem; font-size: 0.9rem;">
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-dim);">Election ID</span>
+          <span style="font-family: var(--font-mono); color: var(--primary);">{{ election.get('id') }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-dim);">Title</span>
+          <strong style="color: #fff;">{{ election.get('title') }}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-dim);">Certified Candidates</span>
+          <span>{{ election.get('candidates', [])|length }} Candidates</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-dim);">Consensus Protocol</span>
+          <span>Leader-Quorum (Q=2/3)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Certified Candidates List -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Official Ballot Candidates</h2>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+        {% for c in election.get('candidates', []) %}
+          <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.6); padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+            <div>
+              <strong style="color: #fff;">{{ c.name }}</strong>
+              <span style="color: var(--text-dim); font-size: 0.8rem; margin-left: 0.5rem;">({{ c.party }})</span>
+            </div>
+            <code style="color: var(--primary); font-size: 0.8rem;">{{ c.id }}</code>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Registered Voters Roster -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Registered Voters Roster</h2>
+      <span style="color: var(--text-muted); font-size: 0.85rem;">{{ voters|length }} Total Registered Voters</span>
+    </div>
+
+    <div class="data-table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Voter ID</th>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Eligibility</th>
+            <th>Registration Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in voters %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td style="font-family: var(--font-mono); color: var(--primary);">{{ v.voter_id }}</td>
+              <td style="font-weight: 600; color: #fff;">{{ v.name }}</td>
+              <td style="color: var(--text-muted);">{{ v.email or 'N/A' }}</td>
+              <td>
+                {% if v.eligible %}
+                  <span class="badge badge-success">✓ Eligible</span>
+                {% else %}
+                  <span class="badge badge-danger">✗ Ineligible</span>
+                {% endif %}
+              </td>
+              <td style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-dim);">{{ v.registered_at|round(2) if v.registered_at else 'Prior' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Immutable Audit Log -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Immutable Audit Trail (Concept 3: Doubly Linked Log)</h2>
+      <span style="color: var(--text-muted); font-size: 0.85rem;">Append-only database event log</span>
+    </div>
+
+    {% if audit_logs|length == 0 %}
+      <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+        No audit events recorded yet.
+      </div>
+    {% else %}
+      <div class="data-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Event Type</th>
+              <th>Audit Details</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in audit_logs|reverse %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td><span class="badge badge-purple">{{ log.event_type }}</span></td>
+                <td style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-main);">{{ log.details }}</td>
+                <td style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-dim);">{{ log.timestamp|round(2) if log.timestamp else 'N/A' }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  async function setElectionStatus(status) {
+    if (!confirm("Are you sure you want to change the election status to " + status + "?")) return;
+    try {
+      const res = await fetch('/api/admin/election_status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Election status updated to " + status);
+      } else {
+        alert(data.error || "Failed to update status");
+      }
+      location.reload();
+    } catch(e) {
+      alert("Error: " + e.message);
+    }
+  }
+
+  async function triggerAdminMine() {
+    try {
+      const res = await fetch('/api/admin/mine', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        alert("Mined block #" + (data.block ? data.block.index : 'new'));
+      } else {
+        alert(data.message || data.error);
+      }
+      location.reload();
+    } catch(e) {
+      alert("Error: " + e.message);
+    }
+  }
+</script>
+{% endblock %}

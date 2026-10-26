@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Consensus & Block Validation — Decentralized Voting System{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+  <!-- Header -->
+  <div class="card" style="padding: 1.5rem 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+          <h1 style="font-size: 1.6rem; font-weight: 700;">⚖️ Consensus & Block Validation</h1>
+          <span class="badge badge-success">LEADER-QUORUM (Q &ge; 2/3)</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+          Follower-endorsement consensus protocol ensuring Byzantine fault tolerance and ledger consistency.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 1rem; align-items: center;">
+        <div style="text-align: right;">
+          <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Quorum Requirement</span><br>
+          <strong style="color: #34d399; font-size: 1.3rem;">2 / 3 Nodes (66.7%)</strong>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="triggerConsensusMining()">🔨 Propose & Mine Block</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quorum Gauge & Protocol Rules -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Quorum Progress & Threshold</h2>
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.5rem;">
+          <span>Active Endorsements</span>
+          <strong style="color: #34d399;">3 / 3 Nodes Responding</strong>
+        </div>
+        <div style="background: rgba(255, 255, 255, 0.08); height: 16px; border-radius: 9999px; overflow: hidden;">
+          <div style="background: linear-gradient(90deg, #10b981, #06b6d4); width: 100%; height: 100%;"></div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.88rem;">
+        <div style="display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <span style="color: var(--text-muted);">Leader / Proposer</span>
+          <span style="font-family: var(--font-mono); color: var(--primary);">node_a (Port 5001)</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <span style="color: var(--text-muted);">Validator Follower 1</span>
+          <span style="font-family: var(--font-mono); color: var(--text-main);">node_b (Port 5002)</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 0.4rem 0;">
+          <span style="color: var(--text-muted);">Validator Follower 2</span>
+          <span style="font-family: var(--font-mono); color: var(--text-main);">node_c (Port 5003)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Consensus Validation Checklist -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">4-Step Block Validation Pipeline</h2>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.88rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span style="color: #34d399; font-weight: 700; font-size: 1.1rem;">✓</span>
+          <div>
+            <strong>1. Previous-Hash Invariant:</strong>
+            <div style="color: var(--text-dim); font-size: 0.8rem;">Verifies proposal's previous_hash exactly equals current chain tip hash.</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span style="color: #34d399; font-weight: 700; font-size: 1.1rem;">✓</span>
+          <div>
+            <strong>2. Merkle Root Recomputation:</strong>
+            <div style="color: var(--text-dim); font-size: 0.8rem;">Builds binary Merkle tree of proposal transactions and recalculates SHA-256 root.</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span style="color: #34d399; font-weight: 700; font-size: 1.1rem;">✓</span>
+          <div>
+            <strong>3. Double-Spend & Unspent Token Check:</strong>
+            <div style="color: var(--text-dim); font-size: 0.8rem;">Validates each transaction's single-use token against memory HashSet and SQLite.</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span style="color: #34d399; font-weight: 700; font-size: 1.1rem;">✓</span>
+          <div>
+            <strong>4. ECDSA SECP256R1 Digital Signatures:</strong>
+            <div style="color: var(--text-dim); font-size: 0.8rem;">Verifies asymmetric cryptographic signature from proposer before granting endorsement.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Latest Committed Block Consensus Snapshot -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Latest Block Consensus Snapshot</h2>
+      <span class="badge badge-success">BLOCK #{{ tip_block.index if tip_block else 0 }}</span>
+    </div>
+
+    <div class="receipt-box" style="margin-top: 0;">
+      <div class="receipt-row">
+        <span class="receipt-label">Tip Block Hash</span>
+        <span class="receipt-value" style="color: var(--primary);">{{ tip_block.current_hash if tip_block else '0'*64 }}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Previous Block Hash</span>
+        <span class="receipt-value">{{ tip_block.previous_hash if tip_block else '0'*64 }}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Merkle Root</span>
+        <span class="receipt-value" style="color: #34d399;">{{ tip_block.merkle_root if tip_block else '0'*64 }}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Committed Transactions</span>
+        <span class="receipt-value">{{ tip_block.transactions|length if tip_block else 0 }} ballots</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  async function triggerConsensusMining() {
+    if (!confirm("Trigger a consensus proposal and block mining round across active nodes?")) return;
+    try {
+      const res = await fetch('/api/admin/mine', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        alert("Consensus proposal approved! Mined block #" + (data.block ? data.block.index : 'new'));
+      } else {
+        alert("Consensus response: " + (data.message || data.error));
+      }
+      location.reload();
+    } catch(e) {
+      alert("Consensus error: " + e.message);
+    }
+  }
+</script>
+{% endblock %}

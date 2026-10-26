@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Decentralized Blockchain Voting System{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+  <!-- Navigation Header -->
+  <header class="navbar">
+    <div class="nav-container" style="max-width: 1300px;">
+      <a href="{{ url_for('home') }}" class="nav-brand">
+        <div class="brand-icon">🗳️</div>
+        <span>DecentraVote <span style="font-size: 0.75rem; color: var(--primary); font-weight: 500; font-family: var(--font-mono);">LEDGER</span></span>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="{{ url_for('home') }}" class="{% if request.endpoint == 'home' %}active{% endif %}">Overview</a></li>
+          <li><a href="{{ url_for('vote') }}" class="{% if request.endpoint == 'vote' %}active{% endif %}" style="color: #38bdf8; font-weight: 600;">🗳️ EVM Machine</a></li>
+          <li><a href="{{ url_for('results') }}" class="{% if request.endpoint == 'results' %}active{% endif %}">Live Results</a></li>
+
+          <!-- Blockchain Core Dropdown -->
+          <li class="nav-dropdown">
+            <span class="dropdown-trigger {% if request.endpoint in ['explorer', 'mempool', 'consensus', 'shards'] %}active{% endif %}">
+              ⛓️ Blockchain ▾
+            </span>
+            <div class="dropdown-menu">
+              <a href="{{ url_for('explorer') }}" class="dropdown-item {% if request.endpoint == 'explorer' %}active{% endif %}">
+                <span class="icon">🔍</span> Blockchain Explorer
+              </a>
+              <a href="{{ url_for('mempool') }}" class="dropdown-item {% if request.endpoint == 'mempool' %}active{% endif %}">
+                <span class="icon">⏳</span> Mempool & FIFO Queue
+              </a>
+              <a href="{{ url_for('consensus') }}" class="dropdown-item {% if request.endpoint == 'consensus' %}active{% endif %}">
+                <span class="icon">⚖️</span> Consensus & Quorum
+              </a>
+              <a href="{{ url_for('shards') }}" class="dropdown-item {% if request.endpoint == 'shards' %}active{% endif %}">
+                <span class="icon">🌐</span> Sharding Ring (50 VN)
+              </a>
+            </div>
+          </li>
+
+          <!-- Distributed Network -->
+          <li><a href="{{ url_for('network') }}" class="{% if request.endpoint == 'network' %}active{% endif %}">🌐 3-Node Network</a></li>
+
+          <!-- 25 DSA Concepts Laboratory -->
+          <li><a href="{{ url_for('dsa_lab') }}" class="{% if request.endpoint == 'dsa_lab' %}active{% endif %}" style="color: #a78bfa; font-weight: 600;">🔬 25 DSA Lab</a></li>
+
+          <!-- Admin & Operations Dropdown -->
+          <li class="nav-dropdown">
+            <span class="dropdown-trigger {% if request.endpoint in ['merkle_proof_page', 'admin_portal', 'system_health', 'deployment_guide'] %}active{% endif %}">
+              ⚙️ Ops & Admin ▾
+            </span>
+            <div class="dropdown-menu">
+              <a href="{{ url_for('merkle_proof_page') }}" class="dropdown-item {% if request.endpoint == 'merkle_proof_page' %}active{% endif %}">
+                <span class="icon">🔬</span> Merkle Proof Auditor
+              </a>
+              <a href="{{ url_for('admin_portal') }}" class="dropdown-item {% if request.endpoint == 'admin_portal' %}active{% endif %}">
+                <span class="icon">🏛️</span> Election Administration
+              </a>
+              <a href="{{ url_for('system_health') }}" class="dropdown-item {% if request.endpoint == 'system_health' %}active{% endif %}">
+                <span class="icon">🩺</span> System Health & Security
+              </a>
+              <a href="{{ url_for('deployment_guide') }}" class="dropdown-item {% if request.endpoint == 'deployment_guide' %}active{% endif %}">
+                <span class="icon">🚀</span> LAN & Local Deployment
+              </a>
+            </div>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="nav-user">
+        {% if session.get('voter_id') %}
+          <div class="voter-badge">
+            <span>👤</span>
+            <strong>{{ session.get('voter_name', session.get('voter_id')) }}</strong>
+          </div>
+          <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
+        {% else %}
+          <div style="display: flex; gap: 0.5rem;">
+            <a href="{{ url_for('register') }}" class="btn btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.85rem;">Register</a>
+            <a href="{{ url_for('login') }}" class="btn btn-primary" style="padding: 0.4rem 0.85rem; font-size: 0.85rem;">Sign In</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-wrapper">
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-container">
+          {% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}">
+              <span>{{ message }}</span>
+              <button onclick="this.parentElement.remove()" style="background:none;border:none;color:inherit;cursor:pointer;font-size:1.1rem;margin-left:1rem;">&times;</button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <strong>Decentralized Blockchain Voting System</strong> &bull; 25 DSA Concepts &bull; Sharded Ledger
+      </div>
+      <div>
+        Node Consensus: <span style="color: var(--primary);">Leader-Quorum (Q=2/3)</span> &bull; Status: <span style="color: #34d399;">Active</span>
+      </div>
+    </div>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

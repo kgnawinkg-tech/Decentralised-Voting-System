@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}25 DSA Concepts Laboratory — Decentralized Voting System{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+  <!-- Header -->
+  <div class="card" style="padding: 1.5rem 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+          <h1 style="font-size: 1.6rem; font-weight: 700;">🔬 25 Data Structures & Algorithms Laboratory</h1>
+          <span class="badge badge-purple">ALL 25 CONCEPTS IMPLEMENTED</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+          Every algorithmic foundation of the Decentralized Blockchain Voting System with complexity proofs, implementation module references, and live interactive execution.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 1.5rem; text-align: right;">
+        <div>
+          <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Total DSA Concepts</span><br>
+          <strong style="color: #a78bfa; font-size: 1.4rem;">25 / 25 Modules</strong>
+        </div>
+        <div>
+          <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Live Engine</span><br>
+          <span class="badge badge-success">✓ Python Backend Connected</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Buttons -->
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1.25rem;">
+      <button type="button" class="btn btn-secondary dsa-filter-btn active" onclick="filterDsa('all', this)">All (25)</button>
+      <button type="button" class="btn btn-secondary dsa-filter-btn" onclick="filterDsa('core', this)">Core Data Structures (1-6, 12, 25)</button>
+      <button type="button" class="btn btn-secondary dsa-filter-btn" onclick="filterDsa('trees', this)">Trees & Tries (7-9, 22)</button>
+      <button type="button" class="btn btn-secondary dsa-filter-btn" onclick="filterDsa('graphs', this)">Graphs & Networks (10, 11, 13, 14, 19-21)</button>
+      <button type="button" class="btn btn-secondary dsa-filter-btn" onclick="filterDsa('crypto', this)">Search, Sort & Crypto (15-18, 23, 24)</button>
+    </div>
+  </div>
+
+  <!-- DSA Concepts Cards Grid -->
+  <div class="grid-2" id="dsaGrid">
+
+    {% set concepts = [
+      {"id": "hash_table", "num": 1, "cat": "core", "name": "Hash Table (Separate Chaining)", "module": "src/dsa/hash_table.py", "time": "Avg O(1), Worst O(N)", "space": "O(N + M)", "purpose": "O(1) lookup of registered voters, ballots, and single-use token authorization records across memory buckets."},
+      {"id": "singly_linked_list", "num": 2, "cat": "core", "name": "Singly Linked List", "module": "src/dsa/singly_linked_list.py", "time": "Append O(1), Search O(N)", "space": "O(N)", "purpose": "Sequential forward traversal of blockchain blocks from genesis to tip."},
+      {"id": "doubly_linked_list", "num": 3, "cat": "core", "name": "Doubly Linked List", "module": "src/dsa/doubly_linked_list.py", "time": "Insert O(1), Walk O(N)", "space": "O(N)", "purpose": "Bidirectional navigation of immutable audit event logs and historic transaction snapshots."},
+      {"id": "stack", "num": 4, "cat": "core", "name": "Stack (LIFO)", "module": "src/dsa/stack.py", "time": "Push O(1), Pop O(1)", "space": "O(N)", "purpose": "LIFO blockchain state rollback, orphan block recovery, and validation call stacks."},
+      {"id": "queue", "num": 5, "cat": "core", "name": "FIFO Queue", "module": "src/dsa/queue.py", "time": "Enqueue O(1), Dequeue O(1)", "space": "O(N)", "purpose": "Fair FIFO Mempool ordering for incoming ballot transactions prior to block proposals."},
+      {"id": "priority_queue", "num": 6, "cat": "core", "name": "Priority Queue (Min-Heap)", "module": "src/dsa/priority_queue.py", "time": "Push O(log N), Pop O(log N)", "space": "O(N)", "purpose": "Latency-ordered peer synchronization and retry job scheduling across cluster nodes."},
+      {"id": "binary_search_tree", "num": 7, "cat": "trees", "name": "Binary Search Tree", "module": "src/dsa/binary_search_tree.py", "time": "Avg O(log N), Worst O(N)", "space": "O(N)", "purpose": "Ordered block indexing and range queries over historical block timestamps."},
+      {"id": "avl_tree", "num": 8, "cat": "trees", "name": "AVL Tree (Self-Balancing)", "module": "src/dsa/avl_tree.py", "time": "Guaranteed O(log N)", "space": "O(N)", "purpose": "Balanced height enforcement with LL, RR, LR, RL rotations for deterministic audit lookups."},
+      {"id": "trie", "num": 9, "cat": "trees", "name": "Trie (Prefix Tree)", "module": "src/dsa/trie.py", "time": "Search O(L + K)", "space": "O(Total Chars)", "purpose": "Instant prefix autocomplete for certified candidate names and registered voter IDs."},
+      {"id": "graph", "num": 10, "cat": "graphs", "name": "Graph (Adjacency List)", "module": "src/dsa/graph.py", "time": "Add Edge O(1), Query O(V+E)", "space": "O(V + E)", "purpose": "In-memory representation of peer-to-peer network mesh topology and cluster node connections."},
+      {"id": "union_find", "num": 11, "cat": "graphs", "name": "Union-Find (Disjoint Set)", "module": "src/dsa/union_find.py", "time": "O(alpha(N)) Amortized", "space": "O(N)", "purpose": "Dynamic connectivity analysis and split-brain network partition detection."},
+      {"id": "circular_queue", "num": 12, "cat": "core", "name": "Circular Queue (Ring Buffer)", "module": "src/dsa/circular_queue.py", "time": "Enqueue O(1), Dequeue O(1)", "space": "O(Capacity)", "purpose": "Bounded incoming request buffer preventing memory exhaustion during polling bursts."},
+      {"id": "bfs", "num": 13, "cat": "graphs", "name": "Breadth-First Search (BFS)", "module": "src/dsa/bfs.py", "time": "O(V + E)", "space": "O(V)", "purpose": "Layered peer discovery and shortest-hop routing to available cluster validator nodes."},
+      {"id": "dfs", "num": 14, "cat": "graphs", "name": "Depth-First Search (DFS)", "module": "src/dsa/dfs.py", "time": "O(V + E)", "space": "O(V)", "purpose": "Deep connectivity exploration and connected component verification across network links."},
+      {"id": "consistent_hashing", "num": 15, "cat": "crypto", "name": "Consistent Hashing Ring (50 VN)", "module": "src/dsa/consistent_hashing.py", "time": "Lookup O(log(N * R))", "space": "O(N * R)", "purpose": "Deterministic record sharding across 3 nodes with 50 virtual nodes per storage computer."},
+      {"id": "binary_search", "num": 16, "cat": "crypto", "name": "Binary Search", "module": "src/dsa/binary_search.py", "time": "O(log N)", "space": "O(1)", "purpose": "Logarithmic lookup over sorted block indices and pre-sorted audit timestamp arrays."},
+      {"id": "merge_sort", "num": 17, "cat": "crypto", "name": "Merge Sort", "module": "src/dsa/merge_sort.py", "time": "O(N log N) Stable", "space": "O(N)", "purpose": "Stable sorting of historic election audit events and chronological block records."},
+      {"id": "quick_sort", "num": 18, "cat": "crypto", "name": "Quick Sort (Median Pivot)", "module": "src/dsa/quick_sort.py", "time": "Avg O(N log N)", "space": "O(log N)", "purpose": "High-speed candidate vote ranking and descending tally distribution sorting."},
+      {"id": "dijkstra", "num": 19, "cat": "graphs", "name": "Dijkstra Shortest Path", "module": "src/dsa/dijkstra.py", "time": "O((V + E) log V)", "space": "O(V)", "purpose": "Shortest latency path routing between distributed voting stations and leader nodes."},
+      {"id": "topological_sort", "num": 20, "cat": "graphs", "name": "Topological Sort (Kahn's)", "module": "src/dsa/topological_sort.py", "time": "O(V + E)", "space": "O(V)", "purpose": "Ordering transaction validation DAGs to ensure dependent transactions are processed in order."},
+      {"id": "cycle_detection", "num": 21, "cat": "graphs", "name": "Cycle Detection (3-Color DFS)", "module": "src/dsa/cycle_detection.py", "time": "O(V + E)", "space": "O(V)", "purpose": "Detecting deadlocks and circular dependencies in block proposal endorsement graphs."},
+      {"id": "merkle_tree", "num": 22, "cat": "trees", "name": "Merkle Tree", "module": "src/blockchain/merkle_tree.py", "time": "Build O(N), Proof O(log N)", "space": "O(N)", "purpose": "Binary cryptographic hash tree providing tamper-evident block headers and inclusion proofs."},
+      {"id": "sha256", "num": 23, "cat": "crypto", "name": "SHA-256 Hashing", "module": "src/security/hashing.py", "time": "O(M) Message Bytes", "space": "O(1)", "purpose": "Cryptographic tamper-evidence, deterministic canonical block hashing, and token blinding."},
+      {"id": "digital_signatures", "num": 24, "cat": "crypto", "name": "ECDSA Digital Signatures", "module": "src/security/digital_signatures.py", "time": "O(1) Scalar Mult", "space": "O(1)", "purpose": "Asymmetric SECP256R1 ECDSA signing of block proposals and validator endorsements."},
+      {"id": "hash_set", "num": 25, "cat": "core", "name": "Hash Set (Duplicate Replay Guard)", "module": "src/dsa/hash_set.py", "time": "Avg O(1), Worst O(N)", "space": "O(N)", "purpose": "In-memory duplicate vote and replayed token detection before queueing into mempool."}
+    ] %}
+
+    {% for dsa in concepts %}
+      <div class="dsa-card" id="card_dsa_{{ dsa.id }}" data-category="{{ dsa.cat }}">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
+          <div>
+            <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--primary); font-weight: 700;">
+              CONCEPT #{{ dsa.num }} &bull; {{ dsa.cat|upper }}
+            </div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0.2rem 0;">{{ dsa.name }}</h3>
+          </div>
+          <span class="badge badge-purple">LIVE TESTABLE</span>
+        </div>
+
+        <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.5;">
+          {{ dsa.purpose }}
+        </p>
+
+        <div style="background: rgba(15, 23, 42, 0.6); padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.82rem; font-family: var(--font-mono); display: flex; flex-direction: column; gap: 0.35rem;">
+          <div><span style="color: var(--text-dim);">Module:</span> <code style="color: #38bdf8;">{{ dsa.module }}</code></div>
+          <div style="display: flex; justify-content: space-between;">
+            <div><span style="color: var(--text-dim);">Time:</span> <strong style="color: #34d399;">{{ dsa.time }}</strong></div>
+            <div><span style="color: var(--text-dim);">Space:</span> <strong style="color: #fbbf24;">{{ dsa.space }}</strong></div>
+          </div>
+        </div>
+
+        <!-- Live Demonstration Output Box -->
+        <div id="output_{{ dsa.id }}" style="display: none; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: var(--radius-sm); padding: 0.75rem; font-family: var(--font-mono); font-size: 0.8rem; color: #38bdf8; max-height: 140px; overflow-y: auto;">
+        </div>
+
+        <!-- Run Live Action Button -->
+        <div style="display: flex; justify-content: flex-end; margin-top: auto; padding-top: 0.5rem;">
+          <button 
+            type="button" 
+            class="btn btn-secondary" 
+            id="btn_run_{{ dsa.id }}"
+            style="padding: 0.35rem 0.75rem; font-size: 0.82rem;"
+            onclick="runLiveDsa('{{ dsa.id }}')"
+          >
+            ▶ Run Live Concept
+          </button>
+        </div>
+      </div>
+    {% endfor %}
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function filterDsa(category, btn) {
+    document.querySelectorAll('.dsa-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const cards = document.querySelectorAll('.dsa-card');
+    cards.forEach(card => {
+      const cat = card.getAttribute('data-category');
+      if (category === 'all' || cat === category) {
+        card.style.display = 'flex';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  async function runLiveDsa(conceptId) {
+    const btn = document.getElementById('btn_run_' + conceptId);
+    const output = document.getElementById('output_' + conceptId);
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Executing...';
+    output.style.display = 'block';
+    output.innerHTML = '<span style="color: var(--text-dim);">Invoking Python backend module...</span>';
+
+    try {
+      const res = await fetch('/api/dsa/' + encodeURIComponent(conceptId), { method: 'POST' });
+      const data = await res.json();
+      btn.disabled = false;
+      btn.textContent = '🔄 Re-run';
+
+      output.innerHTML = '<strong style="color: #34d399;">✓ EXECUTION SUCCESSFUL:</strong><br><pre style="margin: 0; white-space: pre-wrap; word-break: break-all;">' + JSON.stringify(data, null, 2) + '</pre>';
+    } catch(e) {
+      btn.disabled = false;
+      btn.textContent = '▶ Run Live Concept';
+      output.innerHTML = '<span style="color: #f87171;">Error executing concept: ' + e.message + '</span>';
+    }
+  }
+</script>
+{% endblock %}

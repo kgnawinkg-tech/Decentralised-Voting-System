@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Ballot Confirmation Receipt — Decentralized Voting System{% endblock %}
+
+{% block content %}
+<div style="max-width: 720px; margin: 1.5rem auto;">
+  <div class="card">
+    <div style="text-align: center; margin-bottom: 2rem;">
+      <div style="width: 64px; height: 64px; background: rgba(16, 185, 129, 0.15); border: 2px solid #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1rem auto; box-shadow: 0 0 25px rgba(16, 185, 129, 0.3);">
+        ✓
+      </div>
+      <h1 class="card-title" style="justify-content: center; font-size: 1.8rem; color: #34d399;">
+        Ballot Successfully Accepted!
+      </h1>
+      <p style="color: var(--text-muted); font-size: 1rem; margin-top: 0.5rem;">
+        Your vote has been cryptographically signed, routed to the responsible shard, and committed to the ledger.
+      </p>
+    </div>
+
+    <!-- Receipt Details Box -->
+    <div class="receipt-box">
+      <div class="receipt-row">
+        <span class="receipt-label">Receipt Status</span>
+        <span style="color: #34d399; font-weight: 700;">COMMITTED & VERIFIED</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Transaction ID</span>
+        <span class="receipt-value" style="color: var(--primary);">{{ receipt.get('transaction_id') }}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Token Hash (Single-Use)</span>
+        <span class="receipt-value">{{ receipt.get('token_hash', 'N/A')[:24] }}...</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Assigned Shard ID</span>
+        <span class="receipt-value" style="color: var(--accent-purple);">{{ receipt.get('assigned_shard', 'shard_default') }}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Timestamp</span>
+        <span class="receipt-value">{{ receipt.get('timestamp') }}</span>
+      </div>
+      {% if receipt.get('block_index') is not none %}
+        <div class="receipt-row">
+          <span class="receipt-label">Committed Block Height</span>
+          <span class="receipt-value" style="color: #fbbf24; font-weight: 700;">Block #{{ receipt.get('block_index') }}</span>
+        </div>
+      {% endif %}
+      {% if receipt.get('merkle_root') %}
+        <div class="receipt-row">
+          <span class="receipt-label">Block Merkle Root</span>
+          <span class="receipt-value">{{ receipt.get('merkle_root')[:24] }}...</span>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Merkle Proof Verification Widget -->
+    <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1.25rem; margin-bottom: 2rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+        <strong style="color: var(--text-main); font-size: 0.95rem;">🔬 Merkle Tree Inclusion Audit</strong>
+        <button type="button" class="btn btn-secondary" id="btnVerifyProof" onclick="verifyProof('{{ receipt.get('transaction_id') }}')" style="padding: 0.35rem 0.85rem; font-size: 0.8rem;">
+          Verify Inclusion Proof
+        </button>
+      </div>
+      <div id="proofOutput" style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 4px; min-height: 40px; display: flex; align-items: center;">
+        Click "Verify Inclusion Proof" to cryptographically validate the leaf-to-root hash trajectory.
+      </div>
+    </div>
+
+    <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1.5rem; font-size: 0.85rem; color: var(--text-muted);">
+      ℹ️ <strong>Privacy Protection Note:</strong> Save your Transaction ID for future self-auditing. To protect voter privacy, candidate selections are decoupled from voter profiles and cannot be linked back to your identity.
+    </div>
+
+    <!-- Receipt Action Buttons -->
+    <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1.5rem;">
+      <button type="button" class="btn btn-secondary" onclick="copyReceiptId('{{ receipt.get('transaction_id') }}')">
+        📋 Copy Tx ID
+      </button>
+      <button type="button" class="btn btn-secondary" onclick="downloadReceiptJson()">
+        💾 Download Receipt JSON
+      </button>
+      <a href="{{ url_for('merkle_proof_page') }}?tx_id={{ receipt.get('transaction_id') }}" class="btn btn-secondary">
+        🔬 Deep Merkle Auditor &rarr;
+      </a>
+    </div>
+
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+      <a href="{{ url_for('results') }}" class="btn btn-primary">View Election Tally &rarr;</a>
+      <a href="{{ url_for('explorer') }}" class="btn btn-secondary">Explore Blockchain</a>
+      <a href="{{ url_for('home') }}" class="btn btn-secondary">Return Home</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  async function verifyProof(txId) {
+    const output = document.getElementById('proofOutput');
+    output.innerHTML = '<span style="color: var(--primary);">Querying node consensus for Merkle proof...</span>';
+    
+    try {
+      const res = await fetch('/api/merkle_proof/' + txId);
+      const data = await res.json();
+      
+      if (!res.ok || !data.success) {
+        output.innerHTML = '<span style="color: #fb7185;">' + (data.error || 'Proof not yet available in mined block') + '</span>';
+        return;
+      }
+      
+      const vRes = await fetch('/api/verify_receipt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transaction: data.transaction,
+          merkle_root: data.merkle_root,
+          proof: data.proof
+        })
+      });
+      const vData = await vRes.json();
+      
+      if (vData.valid) {
+        output.innerHTML = '<span style="color: #34d399; font-weight: 700;">✓ VALID PROOF:</span> Leaf hash verified against Block #' + data.block_index + ' Merkle Root (' + data.merkle_root.substring(0, 16) + '...). Path length: ' + data.proof.length + ' hashes.';
+      } else {
+        output.innerHTML = '<span style="color: #fb7185; font-weight: 700;">✗ INVALID PROOF:</span> ' + vData.error;
+      }
+    } catch (e) {
+      output.innerHTML = '<span style="color: #fb7185;">Network check failed: ' + e.message + '</span>';
+    }
+  }
+
+  function copyReceiptId(txId) {
+    navigator.clipboard.writeText(txId).then(() => {
+      alert("Transaction ID copied to clipboard: " + txId);
+    }).catch(() => {
+      prompt("Copy your Transaction ID manually:", txId);
+    });
+  }
+
+  function downloadReceiptJson() {
+    const receiptData = {{ receipt|tojson }};
+    const blob = new Blob([JSON.stringify(receiptData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ballot_receipt_' + (receiptData.transaction_id || 'vote').substring(0, 10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+</script>
+{% endblock %}

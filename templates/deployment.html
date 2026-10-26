@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}LAN & Local Deployment Guide — Decentralized Voting System{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+  <!-- Header -->
+  <div class="card" style="padding: 1.5rem 2rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+      <h1 style="font-size: 1.6rem; font-weight: 700;">🚀 Configuration & Multi-Computer Deployment Guide</h1>
+      <span class="badge badge-info">OPERATIONAL MANUAL</span>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">
+      Run the decentralized blockchain voting cluster either as a concurrent 3-node simulation on a single computer or deployed across physical laptops over a Wi-Fi / LAN switch.
+    </p>
+  </div>
+
+  <!-- Mode A vs Mode B Tabs -->
+  <div class="grid-2">
+    <!-- Mode A: Single-Computer Simulation -->
+    <div class="card" style="border-top: 4px solid var(--primary);">
+      <div class="card-header">
+        <h2 class="card-title">💻 Deployment Mode A: Local 3-Node Simulation</h2>
+      </div>
+
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+        Spins up three independent logical node processes on localhost with isolated SQLite databases and distinct ECDSA keypairs:
+      </p>
+
+      <ul style="color: var(--text-muted); font-size: 0.85rem; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem;">
+        <li><strong>Node A (Leader):</strong> <code>http://127.0.0.1:5001</code> (DB: <code>data/node_a/node_a.db</code>)</li>
+        <li><strong>Node B (Validator):</strong> <code>http://127.0.0.1:5002</code> (DB: <code>data/node_b/node_b.db</code>)</li>
+        <li><strong>Node C (Validator):</strong> <code>http://127.0.0.1:5003</code> (DB: <code>data/node_c/node_c.db</code>)</li>
+        <li><strong>Voter Portal EVM:</strong> <code>http://127.0.0.1:5050</code></li>
+      </ul>
+
+      <div style="background: rgba(0, 0, 0, 0.4); padding: 0.75rem 1rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.82rem; color: #38bdf8; border: 1px solid rgba(255, 255, 255, 0.05);">
+        # Start all 3 nodes simultaneously:<br>
+        python3 main.py<br><br>
+        # In second terminal, start the EVM UI:<br>
+        python3 voting_ui.py --port 5050
+      </div>
+    </div>
+
+    <!-- Mode B: Physical LAN Deployment -->
+    <div class="card" style="border-top: 4px solid #a78bfa;">
+      <div class="card-header">
+        <h2 class="card-title">🌐 Deployment Mode B: Physical LAN Across Laptops</h2>
+      </div>
+
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+        Connect each physical laptop to the same Wi-Fi router or switch and bind to <code>0.0.0.0</code>:
+      </p>
+
+      <div style="background: rgba(0, 0, 0, 0.4); padding: 0.75rem 1rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.82rem; color: #a78bfa; border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 1rem;">
+        # On Laptop A (e.g. IP 192.168.1.10):<br>
+        python3 app.py --node-id node_a --host 0.0.0.0 --port 5001 --peers http://192.168.1.11:5002 http://192.168.1.12:5003<br><br>
+        # On Laptop B (e.g. IP 192.168.1.11):<br>
+        python3 app.py --node-id node_b --host 0.0.0.0 --port 5002 --peers http://192.168.1.10:5001 http://192.168.1.12:5003<br><br>
+        # On Laptop C (e.g. IP 192.168.1.12):<br>
+        python3 app.py --node-id node_c --host 0.0.0.0 --port 5003 --peers http://192.168.1.10:5001 http://192.168.1.11:5002
+      </div>
+
+      <div style="font-size: 0.82rem; color: var(--text-muted);">
+        ⚠️ Ensure OS firewalls permit incoming TCP traffic on ports 5001, 5002, 5003, and 5050.
+      </div>
+    </div>
+  </div>
+
+  <!-- Live config.yaml Inspector -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Active Configuration (config.yaml)</h2>
+      <span class="badge badge-purple">LIVE CONFIG</span>
+    </div>
+
+    <pre style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1.25rem; font-family: var(--font-mono); font-size: 0.82rem; color: #38bdf8; overflow-x: auto; margin: 0;">{{ config_raw }}</pre>
+  </div>
+
+</div>
+{% endblock %}

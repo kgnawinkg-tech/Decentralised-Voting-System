@@ -1,0 +1,59 @@
+# Decentralized Blockchain Voting System Configuration
+
+network:
+  nodes:
+    node_a:
+      id: "node_a"
+      name: "Node A (Computer A)"
+      host: "127.0.0.1"
+      port: 5001
+      db_path: "data/node_a/node_a.db"
+      storage_dir: "data/node_a/storage"
+      peers:
+        - "http://127.0.0.1:5002"
+        - "http://127.0.0.1:5003"
+    node_b:
+      id: "node_b"
+      name: "Node B (Computer B)"
+      host: "127.0.0.1"
+      port: 5002
+      db_path: "data/node_b/node_b.db"
+      storage_dir: "data/node_b/storage"
+      peers:
+        - "http://127.0.0.1:5001"
+        - "http://127.0.0.1:5003"
+    node_c:
+      id: "node_c"
+      name: "Node C (Computer C)"
+      host: "127.0.0.1"
+      port: 5003
+      db_path: "data/node_c/node_c.db"
+      storage_dir: "data/node_c/storage"
+      peers:
+        - "http://127.0.0.1:5001"
+        - "http://127.0.0.1:5002"
+
+sharding:
+  virtual_nodes: 50
+  hash_function: "sha256"
+
+consensus:
+  protocol: "leader_quorum"
+  leader_id: "node_a"
+  quorum_size: 2
+  timeout_seconds: 5.0
+
+election:
+  id: "election_2026_general"
+  title: "2026 Decentralized General Election"
+  description: "Secure, tamper-evident decentralized vote recording on blockchain with sharded storage"
+  candidates:
+    - id: "cand_1"
+      name: "Alice Johnson"
+      party: "Progressive Tech Alliance"
+    - id: "cand_2"
+      name: "Bob Martinez"
+      party: "Open Data Coalition"
+    - id: "cand_3"
+      name: "Carol Chen"
+      party: "Green Cyber Initiative"

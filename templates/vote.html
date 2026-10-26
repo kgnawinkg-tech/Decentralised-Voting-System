@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+
+{% block title %}Electronic Voting Machine (EVM) — Decentralized Voting System{% endblock %}
+
+{% block content %}
+<div class="evm-outer-chassis">
+
+  <!-- Educational Project Disclaimer Banner -->
+  <div class="evm-disclaimer-banner">
+    <div style="display: flex; align-items: center; gap: 0.6rem;">
+      <span style="font-size: 1.25rem;">⚠️</span>
+      <span><strong>Educational Demonstration Prototype:</strong> This is a custom physical-style Electronic Voting Machine (EVM) interface built for demonstrating blockchain consensus and decentralized record sharding. It is not an official Election Commission device.</span>
+    </div>
+    <span class="badge badge-warning">DEMO MODE</span>
+  </div>
+
+  <!-- Voter Eligibility Status Bar -->
+  <div class="card" style="padding: 1rem 1.5rem; background: rgba(15, 23, 42, 0.75);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 1.3rem;">👤</span>
+        <div>
+          <span style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase;">Authenticated Voter</span><br>
+          <strong style="color: var(--text-main); font-size: 1rem;">{{ voter.get('name') }}</strong>
+          <span style="color: var(--text-muted); font-size: 0.85rem; font-family: var(--font-mono);">({{ voter.get('voter_id') }})</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 1.25rem; align-items: center;">
+        <div>
+          <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Eligibility</span><br>
+          <span class="badge badge-success">✓ Certified Eligible</span>
+        </div>
+        <div>
+          <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Assigned Shard</span><br>
+          <span style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--accent-purple); font-weight: 700;">{{ assigned_shard }}</span>
+        </div>
+        <div>
+          <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Election Status</span><br>
+          {% if election.get('status') == 'OPEN' %}
+            <span class="badge badge-success">POLL OPEN</span>
+          {% else %}
+            <span class="badge badge-danger">POLL CLOSED</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if election.get('status') != 'OPEN' %}
+    <div class="card" style="text-align: center; padding: 3rem 2rem; border-color: rgba(239, 68, 68, 0.4);">
+      <div style="font-size: 3rem; margin-bottom: 0.75rem;">🔒</div>
+      <h2 style="color: #f87171; font-size: 1.6rem; font-weight: 700; margin-bottom: 0.5rem;">Election is Officially CLOSED</h2>
+      <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto 1.5rem auto;">
+        Polling has completed for this election. The EVM machine is locked and will not accept new ballots. You can inspect certified results on the public ledger.
+      </p>
+      <a href="{{ url_for('results') }}" class="btn btn-primary">View Final Election Results &rarr;</a>
+    </div>
+
+  {% elif already_voted %}
+    <div class="card" style="text-align: center; padding: 3rem 2rem; border-color: rgba(16, 185, 129, 0.4);">
+      <div style="font-size: 3.5rem; margin-bottom: 1rem;">🗳️✅</div>
+      <h2 style="font-size: 1.8rem; font-weight: 700; color: #34d399; margin-bottom: 0.5rem;">Ballot Recorded on Ledger</h2>
+      <p style="color: var(--text-muted); max-width: 550px; margin: 0 auto 1.5rem auto;">
+        You have already participated in this election. To protect democratic integrity, each eligible voter is constrained to exactly <strong>one</strong> cryptographically accepted ballot.
+      </p>
+      <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+        <a href="{{ url_for('results') }}" class="btn btn-primary">View Live Results &rarr;</a>
+        <a href="{{ url_for('merkle_proof_page') }}" class="btn btn-secondary">Audit Inclusion Proof</a>
+      </div>
+    </div>
+
+  {% else %}
+
+    <!-- ====================================================================
+         PHYSICAL-STYLE ELECTRONIC VOTING MACHINE (EVM)
+         ==================================================================== -->
+    
+    <!-- 1. CONTROL UNIT (CU) -->
+    <div class="evm-control-unit" id="evmControlUnit">
+      <div class="evm-cu-header">
+        <div class="evm-cu-title">
+          <span>⚡</span>
+          <span>BALLOT CONTROL UNIT &bull; MODEL AGY-2026</span>
+        </div>
+        <div style="font-family: var(--font-mono); font-size: 0.75rem; color: #64748b;">
+          SERIAL NO: CU-882940-SEC
+        </div>
+      </div>
+
+      <div class="evm-cu-body">
+        <!-- Digital LCD Screen -->
+        <div class="evm-lcd-screen">
+          <div class="evm-lcd-line1">STATUS DISPLAY &bull; SECURE MICROCONTROLLER</div>
+          <div class="evm-lcd-status" id="evmLcdStatus">BALLOT ENABLED</div>
+          <div class="evm-lcd-counter">
+            <span>POLL: ACTIVE</span>
+            <span id="evmBallotCountDisplay">STANDBY FOR VOTER KEYPRESS</span>
+          </div>
+        </div>
+
+        <!-- Diagnostic LED Cluster -->
+        <div class="evm-lamps-cluster">
+          <div class="evm-lamp-item">
+            <span>ON / READY</span>
+            <div class="evm-indicator-bulb bulb-on" id="bulbOn" title="Power Ready"></div>
+          </div>
+          <div class="evm-lamp-item">
+            <span>BUSY</span>
+            <div class="evm-indicator-bulb" id="bulbBusy" title="Transaction Processing"></div>
+          </div>
+          <div class="evm-lamp-item">
+            <span>VOTE RECORD</span>
+            <div class="evm-indicator-bulb" id="bulbVote" title="Ballot Committed"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inter-Unit Connecting Cable Simulator -->
+    <div class="evm-cable-bridge">
+      <div class="evm-cable-wire"></div>
+      <div class="evm-cable-wire"></div>
+      <div class="evm-cable-wire"></div>
+    </div>
+
+    <!-- 2. BALLOT UNIT (BU) -->
+    <div class="evm-ballot-unit" id="evmBallotUnit">
+      <div class="screw-tl"></div>
+      <div class="screw-tr"></div>
+      <div class="screw-bl"></div>
+      <div class="screw-br"></div>
+
+      <!-- Ballot Sheet Paper Frame -->
+      <div class="evm-ballot-sheet">
+        <div class="evm-sheet-header">
+          <div>
+            <strong>{{ election.get('title', 'General Election') }}</strong> &bull; OFFICIAL BALLOT PAPER
+          </div>
+          <div>BALLOT UNIT: BU-01</div>
+        </div>
+
+        <div class="evm-sheet-columns">
+          <div>S.No</div>
+          <div style="text-align: left; padding-left: 0.75rem;">Candidate & Party</div>
+          <div>Symbol</div>
+          <div>Lamp</div>
+          <div>Vote Key</div>
+        </div>
+
+        <!-- Candidate Rows (Physical EVM Layout) -->
+        <form method="POST" action="{{ url_for('vote') }}" id="evmBallotForm">
+          <input type="hidden" name="candidate_id" id="hiddenCandidateId" value="">
+
+          {% set symbols = ["⚛️", "🌐", "🌱", "⚡", "🏛️", "🚀"] %}
+          {% for c in election.get('candidates', []) %}
+            {% set sym = symbols[loop.index0 % symbols|length] %}
+            <div class="evm-candidate-row" id="row_{{ c.id }}">
+              
+              <!-- Serial Number -->
+              <div class="evm-sno-badge">{{ loop.index }}</div>
+
+              <!-- Name and Party -->
+              <div class="evm-cand-details">
+                <div class="evm-cand-name">{{ c.name }}</div>
+                <div class="evm-cand-party">{{ c.party }}</div>
+              </div>
+
+              <!-- Symbol -->
+              <div class="evm-cand-symbol" title="{{ c.party }} Symbol">{{ sym }}</div>
+
+              <!-- Red Indicator Lamp -->
+              <div class="evm-cand-lamp-box">
+                <div class="evm-cand-lamp" id="lamp_{{ c.id }}"></div>
+              </div>
+
+              <!-- 3D Physical Blue Button -->
+              <div class="evm-btn-holder">
+                <button 
+                  type="button" 
+                  class="evm-blue-btn" 
+                  id="btn_{{ c.id }}"
+                  onclick="pressEvmButton('{{ c.id }}', '{{ c.name|escape }}', '{{ c.party|escape }}', '{{ sym }}')"
+                  title="Press to Vote for {{ c.name }}"
+                >
+                </button>
+              </div>
+
+            </div>
+          {% endfor %}
+        </form>
+      </div>
+
+      <!-- Machine Footer Instructions -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; font-size: 0.8rem; color: #94a3b8; font-family: var(--font-mono);">
+        <div>🔒 CRYPTOGRAPHIC ANONYMITY: Single-use blinded token burned upon ballot acceptance</div>
+        <div>CONSENSUS: LEADER-QUORUM (Q &ge; 2/3)</div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         CONFIRMATION MODAL (Required by EVM Workflow Step 9-11)
+         ==================================================================== -->
+    <div id="evmConfirmModal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 1rem;">
+      <div class="card" style="max-width: 520px; width: 100%; border-color: var(--primary); animation: fadeIn 0.2s ease-out;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h2 class="card-title" style="margin-bottom: 0; color: var(--primary); font-size: 1.3rem;">
+            ⚠️ Confirm Candidate Selection
+          </h2>
+          <button type="button" onclick="cancelEvmSelection()" style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;">&times;</button>
+        </div>
+
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.25rem;">
+          You pressed the physical voting key for the following candidate. Please review your selection before submitting:
+        </p>
+
+        <!-- Candidate Preview Box -->
+        <div style="background: rgba(15, 23, 42, 0.9); border: 2px solid rgba(56, 189, 248, 0.3); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 1.25rem;">
+          <div style="font-size: 2.5rem;" id="modalCandidateSymbol">⚛️</div>
+          <div>
+            <div style="font-size: 1.35rem; font-weight: 800; color: #fff;" id="modalCandidateName">Candidate Name</div>
+            <div style="color: #38bdf8; font-size: 0.95rem; font-weight: 600;" id="modalCandidateParty">Candidate Party</div>
+          </div>
+        </div>
+
+        <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: var(--radius-sm); padding: 0.85rem; font-size: 0.82rem; color: #fbbf24; margin-bottom: 1.5rem;">
+          ℹ️ <strong>Atomic Single-Use Token Burn:</strong> Your voting authorization token will be permanently redeemed upon submission. This vote cannot be modified or reversed.
+        </div>
+
+        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+          <button type="button" class="btn btn-secondary" onclick="cancelEvmSelection()">Cancel & Return to Ballot</button>
+          <button type="button" class="btn btn-primary" id="btnConfirmVote" onclick="submitEvmBallot()">Confirm & Cast Ballot &rarr;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Processing Overlay with Beep Animation -->
+    <div id="evmProcessingOverlay" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 2000; align-items: center; justify-content: center; flex-direction: column; gap: 1.5rem;">
+      <div style="width: 80px; height: 80px; border: 4px solid rgba(56, 189, 248, 0.2); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+      <div style="text-align: center;">
+        <h3 style="font-size: 1.5rem; color: #fff; font-weight: 700; margin-bottom: 0.5rem;" id="processingTitle">COMMITTING TO BLOCKCHAIN</h3>
+        <p style="color: var(--text-muted); font-size: 0.95rem;" id="processingSubtitle">Atomic token burn & consensus quorum verification in progress...</p>
+      </div>
+    </div>
+
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Web Audio API Synthesizer for Authentic EVM Sounds
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  let audioCtx = null;
+
+  function initAudio() {
+    if (!audioCtx) {
+      audioCtx = new AudioContext();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  // Mechanical Tactile Key Click
+  function playClickSound() {
+    try {
+      initAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.04);
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.04);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.04);
+    } catch(e) {}
+  }
+
+  // Classic Indian EVM Long Continuous Confirmation Beep (850 Hz tone)
+  function playEvmBeep(duration = 1.8) {
+    try {
+      initAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(850, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime + duration - 0.05);
+      gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch(e) {}
+  }
+
+  let selectedCandidate = null;
+
+  function pressEvmButton(id, name, party, symbol) {
+    playClickSound();
+
+    // Reset previous selection visuals
+    document.querySelectorAll('.evm-cand-lamp').forEach(l => l.classList.remove('lamp-active'));
+    document.querySelectorAll('.evm-candidate-row').forEach(r => r.classList.remove('selected-row'));
+
+    // Highlight row & lamp
+    const lamp = document.getElementById('lamp_' + id);
+    if (lamp) lamp.classList.add('lamp-active');
+
+    const row = document.getElementById('row_' + id);
+    if (row) row.classList.add('selected-row');
+
+    // Update Control Unit status
+    const lcd = document.getElementById('evmLcdStatus');
+    if (lcd) lcd.textContent = "KEYPRESS: " + id.toUpperCase();
+
+    const countDisplay = document.getElementById('evmBallotCountDisplay');
+    if (countDisplay) countDisplay.textContent = "VERIFYING SELECTION MODAL";
+
+    // Show confirmation modal
+    selectedCandidate = { id, name, party, symbol };
+    document.getElementById('hiddenCandidateId').value = id;
+    document.getElementById('modalCandidateName').textContent = name;
+    document.getElementById('modalCandidateParty').textContent = party;
+    document.getElementById('modalCandidateSymbol').textContent = symbol;
+
+    document.getElementById('evmConfirmModal').style.display = 'flex';
+  }
+
+  function cancelEvmSelection() {
+    playClickSound();
+    document.getElementById('evmConfirmModal').style.display = 'none';
+
+    // Reset lamps & selection
+    document.querySelectorAll('.evm-cand-lamp').forEach(l => l.classList.remove('lamp-active'));
+    document.querySelectorAll('.evm-candidate-row').forEach(r => r.classList.remove('selected-row'));
+
+    const lcd = document.getElementById('evmLcdStatus');
+    if (lcd) lcd.textContent = "BALLOT ENABLED";
+
+    const countDisplay = document.getElementById('evmBallotCountDisplay');
+    if (countDisplay) countDisplay.textContent = "STANDBY FOR VOTER KEYPRESS";
+
+    selectedCandidate = null;
+    document.getElementById('hiddenCandidateId').value = '';
+  }
+
+  function submitEvmBallot() {
+    if (!selectedCandidate) return;
+
+    // Close modal
+    document.getElementById('evmConfirmModal').style.display = 'none';
+
+    // Show processing overlay
+    const overlay = document.getElementById('evmProcessingOverlay');
+    overlay.style.display = 'flex';
+
+    // Update Control Unit diagnostic lamps
+    const bulbBusy = document.getElementById('bulbBusy');
+    if (bulbBusy) bulbBusy.classList.add('bulb-busy');
+
+    const lcd = document.getElementById('evmLcdStatus');
+    if (lcd) lcd.textContent = "PROCESSING BALLOT";
+
+    // Play confirmation beep and submit form
+    playEvmBeep(1.8);
+
+    // Disable all buttons to prevent double-submit
+    document.querySelectorAll('.evm-blue-btn').forEach(b => {
+      b.disabled = true;
+      b.classList.add('btn-disabled');
+    });
+
+    setTimeout(() => {
+      document.getElementById('evmBallotForm').submit();
+    }, 900);
+  }
+</script>
+<style>
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}
